@@ -1,0 +1,63 @@
+\documentclass{article}
+
+\usepackage[english]{babel}
+\usepackage{tabularx, array}
+\usepackage{caption} 
+\usepackage{float}
+\usepackage{subfig}
+\usepackage[a4paper,top=2cm,bottom=3cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{siunitx}
+\usepackage[boxruled,linesnumbered]{algorithm2e}
+\usepackage[section]{placeins}
+\usepackage{mathtools}
+\usepackage{newclude}
+\SetKwComment{Comment}{// }{}
+
+\sisetup{%
+    group-digits = integer,
+    group-minimum-digits = 4,
+    group-separator = {\dot{\;}},
+    output-decimal-marker = {,},
+}
+
+\usepackage[lighttt]{lmodern}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\makeatletter
+\makeatother
+
+\captionsetup[table]{justification=centering, labelfont=bf}
+\captionsetup[figure]{justification=centering, labelfont=bf}
+\newcommand{\mono}[1]{\texttt{#1}}
+\newcommand{\bt}{\textbf}
+\title{\textbf{SLAM performance prediction using CNNs}}
+
+
+
+\begin{document}
+\author{Matteo Princisgh}
+\date{}
+\maketitle
+
+\begin{center}
+\parbox{0.85\textwidth}{
+\centering\textit{
+I declare that this material, which I now submit for assessment, is entirely my own work and has not been taken from the work of others, save and to the extent that such work has been cited and acknowledged within the text of my work. I understand that plagiarism, collusion, and copying are grave and serious offences in the university and accept the penalties that would be imposed should I engage in plagiarism, collusion or copying. This assignment, or any part of it, has not been previously submitted by me or any other person for assessment on this or any other course of study.}}
+\end{center}
+
+\include*{01-intro}
+\include*{02-preprocessing}
+\include*{03-model_arch}
+\include*{04-optimization}
+\include*{05-training}
+\include*{06-results}
+
+
+\newpage
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

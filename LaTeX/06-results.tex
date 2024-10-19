@@ -1,0 +1,45 @@
+\section{Experimental results} % ----------------------------------------------
+Finally, once the models have been optimized and trained, it is possible to assess their performance relative to the two models described in Section \ref{sec:related}, using the same metrics as in the article (i.e., R2 score, RMSE, and NRMSE).
+
+
+As shown in \textbf{Table \ref{tab:model_comparison_ATE}}, our custom ResNet performs slightly better than the linear model to predict both translational and rotational error.
+
+
+\begin{table}[ht!]
+    \newcolumntype{Y}{>{\centering\arraybackslash}X}
+    \begin{tabularx}{\textwidth}{YYYY}
+        \hline
+        \textbf{ATE}            & \textbf{R2-score} & \textbf{RMSE} & \textbf{NRMSE}\\\hline 
+          ResNet                & 0.45             & \bt{0.101}    &  \bt{0.049}  \\ 
+          EfficientNet          & 0.40              & 0.105         &  0.051  \\
+          MobileNet             & 0.39              & 0.106         &  0.052  \\ 
+          Linear Model          & \bt{0.46}         & 0.104         &  0.050  \\ 
+          Gaussian Process      & 0.27              & 0.104         &  0.050  \\ \hline
+ 
+        \textbf{ARE}            & \textbf{R2-score} & \textbf{RMSE} & \textbf{NRMSE}\\\hline 
+          ResNet                & \bt{0.050}        & \bt{0.0095}   &  \bt{0.131} \\ 
+          EfficientNet          & 0.040             & 0.0096        &  0.132 \\
+          MobileNet             & 0.043             & 0.0096        &  0.132 \\ 
+          Linear Model          & 0.050             & 0.0099        &  0.136 \\ 
+          Gaussian Process      & -9.47             & 0.0327        &  0.449 \\ \hline
+    \end{tabularx}
+    \caption{Performance comparison of CNNs vs traditional models.}
+    \label{tab:model_comparison_ATE}
+\end{table}
+
+
+\noindent
+The fact that the ResNet model performed better than its pre-trained counterparts is likely due to the fact that the CNN was trained specifically on the kind of images that we are working with. This can also be seen by the fact that, after the optimization process, the pre-trained models have deeper, more complex heads, whereas the ResNet model only needs a single layer with 1024 units. Moreover, it achieved the best score during $k$-fold cross validation, meaning that it is very likely the model is capable of generalizing well.
+
+The deployment of the ResNet model on a robotic platform would also benefit from having a very small inference time, which is two orders of magnitude smaller than the next-best CNN model (i.e., EfficientNet).\\
+
+\noindent
+Further improvements of these results may include:
+
+\begin{itemize}
+    \item Extend the hyperparameter selection phase to perform neural architecture search (NAS) and optimization of the ResNet CNN layers
+    \item Fine-tuning of the pre-trained models
+    \item Usage of other tail architectures, like attention-based models; although the usage of transformers would require a much bigger labeled dataset which is, to the best of my knowledge, not publicly available.  
+\end{itemize}
+
+
