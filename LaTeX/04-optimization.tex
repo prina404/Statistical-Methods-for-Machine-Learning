@@ -1,6 +1,10 @@
 
 \section{Hyperparameter selection} % ----------------------------------------------
-In order to find the \textit{best-performing} model, there were two possible choices for hyperparameter (HP) optimization: 
+In order to find the \textit{best-performing} model across the three architectures (i.e., ResNet, EfficientNet and MobileNet), we need to perform a hyperparameter (HP) selection phase for training the MLP head. Specifically we want to test, for each tail architecture, a set of common HPs chosen manually, and compare it to an optimized set of HPs, specifically tailored to each tail architecture.\\
+
+\noindent
+To perform HP optimization two possibilities were considered:
+
 \begin{itemize}
     \item Perform a random search, over a small HP space, while using $k$-fold cross-validation on each combination of values.
     \item Perform black-box optimization over a larger HP search space, but test each combination only on the validation set (due to time constraints).
@@ -8,6 +12,16 @@ In order to find the \textit{best-performing} model, there were two possible cho
 
 \noindent
 Ultimately, the choice fell on the latter option and the Optuna \cite{akiba2019optuna} framework was used to perform black-box optimization. Given the size of the dataset and the training step time of the models, each training run required a time ranging from 5 up to 20 minutes (on a machine with an RTX2080). This meant that choosing the second HP optimization approach allows for testing a much larger set of HP values for a fixed time budget; specifically, for a given $k$ value of folds in the first approach in the same time frame we would be able to test only $\frac{1}{k}$ HP configurations. The trade-off of the second approach is an increase of uncertainty in the estimation of the model's performance of each HP configuration.\\
+
+\noindent
+The hyperparameters that were chosen for optimization are the following:
+\begin{itemize}
+    \item Learning rate, in the interval [1e-2, 1e-5]
+    \item Number of layers in the MLP head, in the interval [1, 6]
+    \item Number of units in each layer, powers of two in the interval [64, 2048] 
+    \item Batch normalization (use / don't use)
+    \item Dropout (use / don't use)
+\end{itemize}
 
 % -----------------------------------------------------------
 %                                                           \
@@ -26,18 +40,18 @@ The TPE sampler works as follows:
     $$ 
         p^* = \argmax_{p\in S} \frac{\mathbb{P}(p\in\ell(t))}{\mathbb{P}(p\in\mathrm{g}(t))}
     $$
-    Meaning that we want to extract a $p^*$ that maximizes the likelihood of belonging to the `good' distribution, while minimizing the probability that it belongs to the `bad' one.
+    The idea is that we want to extract a $p^*$ that maximizes the likelihood of belonging to the `good' distribution, while minimizing the probability of belonging to the `bad' one.
 \end{enumerate}
 
 \noindent
 Steps 3 and 4 are repeated each time a new set of HPs is drawn and evaluated, so that the distribution $\ell(t)$ is updated in order to converge to a region that minimizes the validation loss of the models built by extracting HPs from it.\\
 
 \noindent
-The HyperBand algorithm is needed to detect and prune trials with poor HP configurations, thus avoiding wasting time and resources on training models with poor hyperparameters. It works by modeling the budget allocation problem as a Multi-Armed Bandit (MAB) problem: each HP configuration is a bandit, and the algorithm tries to find the optimal exploration/exploitation trade-off, where the explorative approach consists in testing many configurations for a short number of iterations, versus the exploitative approach which tests fewer configurations but with a greater allocation of resources.
+The HyperBand algorithm is needed to detect and prune trials with poor HP configurations, thus avoiding wasting time and resources on training models with poor hyperparameters. It works by modeling the budget allocation problem as a Multi-Armed Bandit problem: each HP configuration is a bandit, and the algorithm tries to find the optimal exploration/exploitation trade-off, where the explorative approach consists in testing many configurations for a short number of iterations, versus the exploitative approach which tests fewer configurations but with a greater allocation of resources.
 
 Given a finite number of trials $T$, which is the maximum global number of training runs to be performed, HyperBand allocates the trials across a set of brackets and assigns a budget $\beta$ to each bracket. The budget can be either a time limit or a resource limit; the default budget metric for the Optuna implementation is the number of training epochs.\\
 \noindent
-The example in \textbf{Table \ref{tab:hyperBand}} is useful to intuitively understand how the algorithm works: there are $k = 3$ brackets, in which the leftmost is the explorative one and the rightmost is the exploitative one; the $n_i$ field indicates the number of HP configurations that are to be tested during the $i$-th iteration, and $b_i$ is the budget allocated to each configuration, where $b_i = \frac{\beta}{n_i}$.
+\textbf{Table \ref{tab:hyperBand}} shows an example of how the algorithm works: there are $k = 3$ brackets, in which the leftmost is the explorative one and the rightmost is the exploitative one; the $n_i$ field indicates the number of HP configurations that are to be tested during the $i$-th iteration, and $b_i$ is the budget allocated to each configuration, where $b_i = \frac{\beta}{n_i}$.
 
 \begin{table}[ht!]
 \centering
@@ -61,7 +75,7 @@ The example in \textbf{Table \ref{tab:hyperBand}} is useful to intuitively under
 At the end of each iteration $i$, the worst performing configurations are discarded and the better ones are trained in the subsequent iteration with additional budget. In the example, the number of configurations kept for the successive iteration is $\frac{n_i}{2}$, but a different fractional coefficient $\eta$ can be chosen to reduce the number of iterations. Finally, each bracket requires $\lfloor\log_\eta(n_0)\rfloor$ trials to be completed, which means that the example above would require 41 trials to test 22 different HP combinations, spending a total budget of 160 epochs.\\
 
 \noindent
-The stopping criterion for each HP optimization step, other than HyperBand pruning, is EarlyStopping with a patience of 7 epochs with respect to the validation loss. Finally, the limit of optimization runs (i.e., the \textit{Trial} parameter in \textbf{Algorithm \ref{alg:opt}}) is set to 50, the minimum resource allocated to each trial is three epochs and the maximum is 20. \\
+The stopping criterion for each HP optimization step, other than HyperBand pruning, is EarlyStopping with a patience of 7 epochs with respect to the validation loss. Finally, the limit of optimization runs (i.e., the \textit{Trial} parameter in \textbf{Algorithm \ref{alg:opt}}) is set to 50, the minimum resource allocated to each trial is three epochs and the maximum is 20. 
 
 \noindent
 The optimization process can be summarized as follows:
@@ -90,18 +104,9 @@ The optimization process can be summarized as follows:
 
 \subsection{Optimized architectures} % ------------------------------
 
-\noindent
-One of the advantages of using the Optuna framework is the possibility of visualizing the relative importance of each HP involved in the optimization process, as well as the contour plot of the objective value with respect to the variation of pairs of parameters, as shown in \textbf{Figure \ref{fig:HP_visualizations}}. These visualizations give some insight on how the various combinations of HP affect the model performance and may be useful in case of an eventual ablation study.
-
-\begin{figure}[ht!]
-    \centering
-        \subfloat{\includegraphics[height=.3\linewidth]{images/HP_importance.png}}\hfill
-        \subfloat{\includegraphics[height=.3\linewidth]{images/HP_contour_plot.png}}
-    \caption{Relative importance and contour plot of the validation loss variation with respect to learning rate and  number of MLP layers.}\label{fig:HP_visualizations}
-\end{figure}
 
 \noindent
-The list of tunable HPs, as well as their optimal values, is shown in \textbf{Table \ref{tab:HPselection}}, where we observe how the optimization process converged to some peculiar combinations of layers for the MLP head: for example, the EfficientNet head consists of five layers with [256, 256, 1024, 512, 512] units, which is a fairly unusual succession of layers. Moreover, for all architectures apart from ResNet, neither batch normalization nor dropout were used, which leads to models that converge very quickly to good validation losses, but tend to overfit for longer training runs, as described in the next section.
+After the optimization stage, the HP values obtained are shown in \textbf{Table \ref{tab:HPselection}}, where we observe how the optimization process converged to some peculiar combinations of layers for the MLP heads: for example, the EfficientNet head consists of five layers with [256, 256, 1024, 512, 512] units, which is a fairly unusual succession of layers. Moreover, for all architectures apart from ResNet, neither batch normalization nor dropout were used, which leads to models that converge very quickly to good validation losses, but tend to overfit for longer training runs, as described in the next section.
 
 \begin{table}[ht!]
     \newcolumntype{Y}{>{\centering\arraybackslash}X}
@@ -117,6 +122,16 @@ The list of tunable HPs, as well as their optimal values, is shown in \textbf{Ta
     \caption{Manually selected HP (baseline) vs optimized HP.}
     \label{tab:HPselection}
 \end{table}
+\noindent
+With the data collected during the optimization process, it is possible to visualize the relative importance of each HP, as well as the contour plot of the objective function value with respect to the variation of parameter pairs, as shown in \textbf{Figure \ref{fig:HP_visualizations}}. These visualizations give some insight on how the various combinations of HP affect the model performance and may be useful in case of an eventual ablation study.
+In particular, we observed how, across all of the models, the three hyperparameters with the higher relative importance were: learning rate, batch normalization, and number of units in the first dense layer. Indicating that carefully tuning these hyperparameters has a great influence on the resulting model performance.
+
+\begin{figure}[ht!]
+    \centering
+        \subfloat{\includegraphics[height=.29\linewidth]{images/HP_importance.png}}\hfill
+        \subfloat{\includegraphics[height=.29\linewidth]{images/HP_contour_plot.png}}
+    \caption{Relative importance and contour plot of the validation loss variation with respect to learning rate and  number of MLP layers.}\label{fig:HP_visualizations}
+\end{figure}
 
 
 

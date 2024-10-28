@@ -1,6 +1,6 @@
 
 \section{Introduction} % ----------------------------------------------
-In the field of autonomous mobile robotics, there are many tasks that a robot has to perform in order to explore a new environment. One of these tasks is Simultaneous Localization And Mapping (SLAM), which is a well-known chicken-and-egg problem, where an accurate estimate of a robot pose is needed to create an accurate map, and vice versa an accurate map is needed to effectively estimate its pose. 
+To navigate and interact in an environment, an autonomous mobile robot typically needs a reference map. However, creating this map requires the robot to know its position within it. This is a well-known chicken-and-egg problem in robotics known as Simultaneous Localization and Mapping (SLAM). In SLAM, an accurate map is essential for precise localization of the robot, and, in turn, an accurate estimate of the robot's location is necessary to build an accurate map.
 
 % -----------------------------------------------------------
 %                                                           \
@@ -37,9 +37,15 @@ Finally, to compute the localization error we consider all sorted pairs of trans
 \noindent
 Note that these metrics are dependent on the availability of the GT data, which is easily obtained in simulated environments but extremely difficult to obtain when deploying a robot in the real world, as it would require an external system for accurately tracking its real position.\\
 
+% -----------------------------------------------------------
+%                                                           \
+%                                                           \
+% -----------------------------------------------------------
+
+\subsection{Task formulation} % -------------------------------------------------------
 \noindent
-To address the limitation of depending on the GT data, Luperto et al. in \cite{luperto2021predicting}, propose a method to perform an \textit{a-priori} prediction of the expected ATE and ARE, based on the geometric/topological characteristics of an indoor environment: using a feature extractor, described by Luperto et al. in \cite{luperto2019extracting}, a set of structural features is extracted from a floorplan, in order to represent each environment as a vector $v\in\mathbb{R}^k$, where $k$ is the number of distinct features.
-Successively, each environment is explored by a simulated robot and, by collecting both GT and estimated trajectories, the corresponding ATE and ARE are computed and stored.
+To address the limitation of depending on the GT data, the work in \cite{luperto2021predicting}, proposes a method to perform an \textit{a-priori} prediction of the expected ATE and ARE, based on the geometric/topological characteristics of an indoor environment: using a feature extractor, described in \cite{luperto2019extracting}, a set of structural features is extracted from a floorplan, in order to represent each environment as a vector $v\in\mathbb{R}^k$, where $k$ is the number of distinct features.
+Successively, each environment is explored by a simulated robot and, by collecting both GT and estimated trajectories, the corresponding ATE and ARE are computed and stored.\\
 
 \noindent
 Finally, two models are trained on this dataset:
@@ -48,30 +54,12 @@ Finally, two models are trained on this dataset:
     \item \textbf{Gaussian Process:} computed using an RBF kernel.
 \end{itemize}
 
-\begin{figure}[ht!]
-    \centering
-        \subfloat[KTH]{\includegraphics[width=.35\linewidth, angle=90]{images/50041171.png}}\hspace{.3in}
-        \subfloat[MIT]{\includegraphics[height=.35\linewidth]{images/12-1.png}}\hspace{.3in}
-        \subfloat[HouseExpo]{\includegraphics[height=.35\linewidth]{images/0a47882b40daf033e05e0b2dffafa6f7.png}}
-    \caption{Example of floorplans from the datasets used in this work.}\label{fig:maxExample}
-\end{figure}
-
-% -----------------------------------------------------------
-%                                                           \
-%                                                           \
-% -----------------------------------------------------------
-
-\subsection{Task formulation} % -------------------------------------------------------
-The goal of this project is to evaluate how a predictor, based on state-of-the-art convolutional neural networks (CNN), performs with respect to the aforementioned models. In particular, with the usage of a CNN, it is possible to delegate the feature extraction stage to the network itself, so that a floorplan's image can be fed directly to the model, without computing a set of hand-crafted features.  
-
+\noindent
+The goal of this project is to evaluate how multiple predictors, based on state-of-the-art convolutional neural networks (CNN), performs with respect to these models. In particular, with the usage of a CNN, it is possible to delegate the feature extraction stage to the network itself, so that a floorplan's image can be fed directly to the model, without computing a set of hand-crafted features.
 
 
 \noindent
-The dataset used in this work was collected for my Bachelor's thesis \textit{`Structural analysis of indoor environments for improving autonomous robotic tasks'}, and consists of floorplans and exploration data from three different sources: MIT campus \cite{whiting2006geometric}, KTH campus \cite{aydemir2012KTH}, and HouseExpo \cite{li2019houseexpo}. 
-The joint dataset consists of 5933 floorplans, and contains both domestic and work/school environments, as shown in \textbf{Fig \ref{fig:maxExample}}.\\
-
-\noindent
-Each floorplan has associated three quantities: area ($m^2$), ATE ($m$), and ARE ($rad$); the floorplan image, together with the area, forms the input, while the labels consist of tuples containing the ATE and ARE values.
+Each environment in our dataset is represented as a floorplan image, and it has three associated quantities: area ($m^2$), ATE ($m$), and ARE ($rad$). The predictor we want to build takes as input the floorplan image, together with the area, and produces two values in output, corresponding to the predicted ATE and ARE values.
 
 \noindent
 More formally, the model $h$ we want to learn can be expressed as follows:

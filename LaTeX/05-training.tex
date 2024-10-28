@@ -1,14 +1,27 @@
 
 \section{Training the models} % ----------------------------------------------
-In order to train our custom ResNet CNN, the SGD optimizer was used with mostly the same HPs as the original paper, minus the learning rate, which is two orders of magnitude smaller due to the fact that our network is shallower than the original one. The loss function is MSE, and the SGD HPs used for training are:
+The training phase is divided in two parts, where two different optimizers were used: 
+\begin{itemize}
+    \item ResNet tail training using SGD, which is the only architecture that requires to be trained from scratch, whereas EfficientNet and MobileNet use pre-trained weighs.
+    \item Training the heads of the other configurations with Adam, with both the baseline HP heads and the optimized ones. 
+\end{itemize}
+
+
+\noindent
+In both phases, the MSE loss function is used, which, despite being more sensitive to outliers, converges quicker than the MAE loss. Moreover, both loss functions were tested and MSE consistently yielded better-performing models in a smaller number of epochs.\\
+
+\noindent
+In order to train our custom ResNet from scratch, the SGD optimizer is used with mostly the same HPs as in \cite{resnet2016}, minus the learning rate, which is two orders of magnitude smaller due to the fact that our network is shallower than the original one. 
+Additionally, there are no head layers attached during this phase, thus the two output units are connected directly to the flattened output of the CNN.
+The SGD HPs used for training are:
 \begin{itemize}
     \item \textbf{Learning rate:} $\eta =1\times 10^{-3}$, with a plateau decaying factor of 0.2, meaning that if during training the validation loss becomes stationary, the LR is reduced to allow for finer gradient steps necessary for converging to a local minima.
     \item \textbf{Momentum:} $\beta = 0.9$, which applies gradient smoothing using a weighted moving average on the succession of gradients. Formally:
     \begin{equation*}
     \centering
         \begin{gathered}
-        m_t = \beta m_{t-1} + (1-\beta)\nabla L(W_t)  \\
-        W_{t+1} = W_t - \eta_t m_t\\
+        m_t = \beta m_{t-1} + \eta_t\nabla L(W_t)  \\
+        W_{t+1} = W_t - m_t\\
         \end{gathered}
     \end{equation*}
     Where $m_t$ is the gradient computed at time $t$, $W_t$ are the weights of the network, $\nabla L$ is the loss gradient (computed wrt. a random extraction of one datapoint), $\eta_t$ is the learning rate, and $\beta$ is the momentum.
@@ -17,29 +30,49 @@ In order to train our custom ResNet CNN, the SGD optimizer was used with mostly 
     \begin{equation*}
     \centering
         \begin{gathered}
-        L_{\lambda}(W) = L(W) + \frac{\lambda}{2}||W||^2  \\
-        W_{t+1} = W_t - \eta_t (m_t +\lambda W_t)\\
+        L_{\lambda}(W_t) = L(W_t) + \frac{\lambda}{2}||W_t||^2  \\
+        W_{t+1} = W_t - m_t - \eta_t\lambda W_t\\
         \end{gathered}
     \end{equation*}
      
 \end{itemize}
 
 \noindent
-Apart from the ResNet training, all subsequent training runs have been performed using the \textit{Adam} \cite{kingma2014adam} optimizer and MSE as the loss function.
-
-\textit{Adam} combines the momentum technique described above, with \textit{RMSProp}, which is a similar technique but considers the weighted moving average of the squared gradients, which approximates the gradients variance:
+During the head training phase, the Adam optimizer is used, which combines the momentum technique described above with \textit{RMSProp}, which is a similar technique but considers the weighted moving average of the squared gradients:
     $$
-        V_t = \gamma V_{t-1} + (1-\gamma)(\nabla L(W_t, X_t, Y_t))^2  
+        V_t = \gamma V_{t-1} + \eta_t(\nabla L(W_t))^2  
     $$
-Then uses the squared root of this moving average to adaptively reduce the learning rate. Thus, the update rule for the weights becomes:
+Where $\gamma$ is the discounting factor, similar to the $\beta$ factor of momentum. Then, the squared root of this moving average is used to adaptively reduce the learning rate, and the update rule for the weights becomes:
     $$
-        W_t = W_{t-1} - \frac{\eta_t m_t}{\sqrt{V_t + \epsilon}}
+        W_{t+1} = W_t - \frac{m_t}{\sqrt{V_t + \varepsilon}}
     $$
-This ensures that each weight of the network is adjusted adaptively, with momentum smoothing and scaled updates in case of large gradients\footnote{The additional bias correction steps for the $m_t$ and $V_t$ terms were omitted for brevity.}. The stopping criterion for each run was EarlyStopping, with a patience of 7 epochs, and after stopping the training process, the best weights (i.e., those that minimize validation loss) are restored and saved to disk.
+This ensures that each weight of the network is adjusted adaptively, with momentum smoothing and scaled updates in case of large gradients\footnote{The additional bias correction steps for the $m_t$ and $V_t$ terms were omitted for brevity.}. The stopping criterion for each run is EarlyStopping, with a patience of 7 epochs, and after stopping the training process, the best weights (i.e., those that minimize validation loss) are restored and saved to disk.
 
 \subsection{Training results}
+
 \noindent
-After having optimized each model, a training run is performed with the best HPs and $k$-fold cross validation is used to obtain robust estimates for the model performances. The results are summarized in \textbf{Table \ref{tab:perf_comparison}}, whereas \textbf{Figure \ref{fig:train_perf}} shows the training loss and validation loss curves observed during training. 
+The HyperBand parameters chosen for the HP optimization phase, allow us to test 17 different HP configurations, with a maximum trial amount of 50. The time needed to optimize each head depends heavily on the total number of parameters of the model, thus optimizing ResNet requires approximately 30 minutes, whereas optimizing EfficientNet requires up to five hours.
+
+
+The number of parameters and the inference time of the optimized models are summarized in \textbf{Table \ref{tab:inference_times}}, where the GPU used for these tests is an RTX2080 and the CPU an i7-9700K. The times reported are relative to a single datapoint; calculated by dividing the inference time of a batch by its cardinality.
+\begin{table}[ht!]
+    \centering
+    \newcolumntype{Y}{>{\centering\arraybackslash}X}
+    \begin{tabularx}{\textwidth}{YYYYY}
+        \hline
+        \textbf{Model}              & \textbf{Tail params}  & \textbf{Head params} & \textbf{t-GPU(ms)} & \textbf{t-CPU(ms)}\\
+            \hline 
+            \textbf{ResNet}         & \num{389760}          & \num{135170}      & 0.6  & 4.2 \\ 
+            \textbf{EfficientNet}   & \num{12930622}        & \num{1511170}     & 15.2 & 562  \\ 
+            \textbf{MobileNet}      & \num{2996352}         & \num{542274}      & 4.5  & 250  \\ \hline
+    \end{tabularx}
+    \captionof{table}{Parameters count and inference time of each optimized model.}
+    \label{tab:inference_times}
+\end{table}
+
+
+\noindent
+After having optimized each model, a training run is performed with the best HPs and $k$-fold cross validation is used to obtain robust estimates for the model performances. The results are summarized in \textbf{Table \ref{tab:perf_comparison}}, where we can observe how the ResNet optimized model outperforms the others, with respect to both the test and cross validation losses. While EfficientNet follows closely the performance of ResNet, MobileNet performs well on the test set but has a really high cross validation loss, which indicates that it may have a tendency to overfit on the training data, preventing it from generalize as well as the other models.
 
 
 \begin{table}[ht!]
@@ -68,22 +101,10 @@ After having optimized each model, a training run is performed with the best HPs
 \end{table}
 
 \noindent
-Finally, the number of parameters and the inference time of the optimized models are summarized in \textbf{Table \ref{tab:inference_times}}, where the GPU used for these tests is an RTX2080 and the CPU an i7-9700K. The inference times reported are relative to a single datapoint; calculated by dividing the inference time of a batch by its cardinality.
-\begin{table}[ht!]
-    \centering
-    \newcolumntype{Y}{>{\centering\arraybackslash}X}
-    \begin{tabularx}{\textwidth}{YYYYY}
-        \hline
-        \textbf{Model}              & \textbf{Tail params}  & \textbf{Head params} & \textbf{t-GPU(ms)} & \textbf{t-CPU(ms)}\\
-            \hline 
-            \textbf{ResNet}         & \num{389760}          & \num{135170}      & 0.6  & 4.2 \\ 
-            \textbf{EfficientNet}   & \num{12930622}        & \num{1511170}     & 15.2 & 562  \\ 
-            \textbf{MobileNet}      & \num{2996352}         & \num{542274}      & 4.5  & 250  \\ \hline
-    \end{tabularx}
-    \captionof{table}{Parameters count and inference time of each optimized model.}
-    \label{tab:inference_times}
-\end{table}
+\textbf{Figure \ref{fig:train_perf}} shows the training and validation loss curves observed for both baseline and optimized heads, where we can observe how the optimized architectures converge very quickly to a lower validation loss than their baseline counterparts. In fact, the baseline architectures require at least 10 to 15 epochs for the validation losses to become stationary, whereas the optimized ones require around 5 epochs. As an example of a poor training result, \textbf{Figure \ref{fig:train_perf}e} shows how the MobileNet head with baseline parameters overfits, which is deducible by the validation loss increase after the 20 epoch mark, while the training loss keeps decreasing. 
 
+\noindent
+Moreover, as shown in \textbf{Figure \ref{fig:train_perf}e} and \textbf{Figure \ref{fig:train_perf}c}, the validation losses are fairly noisy before convergence, whereas their optimized counterparts appear to converge in a smoother fashion.  
 
 
 \begin{figure}[ht!]
