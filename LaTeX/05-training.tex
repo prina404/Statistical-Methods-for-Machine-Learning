@@ -46,9 +46,9 @@ Where $\gamma$ is the discounting factor, similar to the $\beta$ factor of momen
     $$
         W_{t+1} = W_t - \frac{m_t}{\sqrt{V_t + \varepsilon}}
     $$
-This ensures that each weight of the network is adjusted adaptively, with momentum smoothing and scaled updates in case of large gradients\footnote{The additional bias correction steps for the $m_t$ and $V_t$ terms were omitted for brevity.}. The stopping criterion for each run is EarlyStopping, with a patience of 7 epochs, and after stopping the training process, the best weights (i.e., those that minimize validation loss) are restored and saved to disk.
+This ensures that each weight of the network is adjusted adaptively, with momentum smoothing and scaled updates in case of large gradients\footnote{The additional bias correction steps for the $m_t$ and $V_t$ terms were omitted for brevity.}. The stopping criterion for each run is EarlyStopping, with a patience of 7 epochs, and, after stopping the training process, the best weights (i.e., those that minimize validation loss) are restored and saved to disk.
 
-\subsection{Training results}
+\subsection{Training results} % ----------------------------------------------
 
 \noindent
 The HyperBand parameters chosen for the HP optimization phase, allow us to test 17 different HP configurations, with a maximum trial amount of 50. The time needed to optimize each head depends heavily on the total number of parameters of the model, thus optimizing ResNet requires approximately 30 minutes, whereas optimizing EfficientNet requires up to five hours.
@@ -82,23 +82,26 @@ After having optimized each model, a training run is performed with the best HPs
         \hline
         \textbf{Model}       & \textbf{Train Loss} & \textbf{Val Loss} & \textbf{Test Loss} & \textbf{5-fold CV}\\
             \hline 
-            \textbf{ResNet}       &  &  &  & \\
+            \textbf{ResNet}             &  &  &  & \\
             Baseline        & 0.0368      & 0.0365              & 0.0354            & 0.0416\\ 
             Optimized       & 0.0366      & \bt{0.0358}         & \bt{0.0352}       & \bt{0.0367}\\ 
-             \hline
+                \hline
              
             \textbf{EfficientNet}       &  &  & & \\
             Baseline        & 0.0355      & 0.0370              & 0.0364            & 0.0382 \\ 
             Optimized       & 0.0351      & 0.0361              & 0.0363            & 0.0376 \\ 
-             \hline
+                \hline
              
             \textbf{MobileNet}          &  &  & & \\
             Baseline        & 0.0261      & 0.0417              & 0.0452            & 0.0471 \\ 
-            Optimized       & 0.0359      & 0.0362              & 0.0356            & 0.0519 \\ \hline
+            Optimized       & 0.0359      & 0.0362              & 0.0356            & 0.0519 \\ 
+                \hline
     \end{tabularx}
     \captionof{table}{Baseline vs optimized performance of the three CNNs.}
     \label{tab:perf_comparison}
 \end{table}
+\noindent
+In summary, a shallow ResNet trained from scratch on a small dataset outperforms more complex pre-trained architectures. This indicates that our learning task is sufficiently easy, likely due to the visual simplicity of the images, combined with a good correlation between the structural characteristics of an environment and the resulting ATE/ARE values.\\
 
 \noindent
 \textbf{Figure \ref{fig:train_perf}} shows the training and validation loss curves observed for both baseline and optimized heads, where we can observe how the optimized architectures converge very quickly to a lower validation loss than their baseline counterparts. In fact, the baseline architectures require at least 10 to 15 epochs for the validation losses to become stationary, whereas the optimized ones require around 5 epochs. As an example of a poor training result, \textbf{Figure \ref{fig:train_perf}e} shows how the MobileNet head with baseline parameters overfits, which is deducible by the validation loss increase after the 20 epoch mark, while the training loss keeps decreasing. 

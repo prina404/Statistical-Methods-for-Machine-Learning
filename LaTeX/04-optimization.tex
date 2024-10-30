@@ -11,7 +11,7 @@ To perform HP optimization two possibilities were considered:
 \end{itemize}
 
 \noindent
-Ultimately, the choice fell on the latter option and the Optuna \cite{akiba2019optuna} framework was used to perform black-box optimization. Given the size of the dataset and the training step time of the models, each training run required a time ranging from 5 up to 20 minutes (on a machine with an RTX2080). This meant that choosing the second HP optimization approach allows for testing a much larger set of HP values for a fixed time budget; specifically, for a given $k$ value of folds in the first approach in the same time frame we would be able to test only $\frac{1}{k}$ HP configurations. The trade-off of the second approach is an increase of uncertainty in the estimation of the model's performance of each HP configuration.\\
+Ultimately, the choice fell on the latter option and the Optuna \cite{akiba2019optuna} framework was used to perform black-box optimization. Given the size of the dataset and the training step time of the models, each training run required a time ranging from 5 up to 20 minutes (on a machine with an RTX2080). This meant that choosing the second HP optimization approach allows for testing a much larger set of HP values for a fixed time budget. The trade-off of the second approach is an increase of uncertainty in the estimation of the model's performance of each HP configuration.\\
 
 \noindent
 The hyperparameters that were chosen for optimization are the following:
@@ -33,7 +33,7 @@ The hyperparameters that were chosen for optimization are the following:
 The two main components used in the optimization phase are Tree-structured Parzen Estimators (TPE) \cite{bergstra2011algorithms}, which belongs to the family of Bayesian optimization algorithms for generating new HPs, and HyperBand \cite{li2018hyperband} for pruning trials with poorly-performing HPs.\\
 The TPE sampler works as follows:
 \begin{enumerate}
-    \item Take as input the hyperparameter search space $\mathcal{H}$.
+    \item Take in input the hyperparameter search space $\mathcal{H}$.
     \item Perform $n$ startup trials (in our case $n = 10$) by randomly sampling sets of parameters $p\in\mathcal{H}$, and score each trial according to the validation loss produced by the model built with $p$.
     \item Divide the trials in two partitions, using a quantile $\gamma$ for thresholding, and define two distributions; the `good' distribution $\ell(t)$ and the `bad' distribution $\mathrm{g}(t)$, created using a Gaussian Mixture Estimator over the two partitions.
     \item To find the next best set $p^*$, we draw $k$ samples distributed according to $\ell(t)$, and build the candidate set $S :=\{p_i\sim\ell(t),~\forall i = 1\dots k\}$. Then we extract $p^*$ as follows:
@@ -86,11 +86,11 @@ The optimization process can be summarized as follows:
     $v^* \leftarrow \infty$\;
     \For{$i\in 1\dots Trials$}
     {
-        $m \leftarrow train\_model(p)$ \Comment*[c]{stop training with pruning or EarlyStopping}
+        $m \leftarrow train\_model(p)$\Comment*[c]{stop training with pruning or EarlyStopping}
         $v \leftarrow evaluate\_model(m)$\Comment*[c]{compute the validation loss}
         \If{$v < v^*$}{
             $v^* \leftarrow v$\;
-            $p^* \leftarrow p$
+            $p^* \leftarrow p$\;
         }
         $p \leftarrow sampler.Sample()$\;
     }

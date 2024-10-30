@@ -29,12 +29,12 @@ As shown in \textbf{Table \ref{tab:model_comparison_ATE}}, our custom ResNet per
 
 
 \noindent
-The fact that the ResNet model performed better than its pre-trained counterparts is likely due to the fact that the CNN was trained specifically on the kind of images that are present in our dataset. This is also confirmed by the fact that, after the optimization process, the pre-trained models have deeper, more complex heads, whereas the ResNet model only needs a single layer with 1024 units. Moreover, the ResBet model achieved the best score during $k$-fold cross validation, indicating that it is likely capable of generalizing well.
+The fact that the ResNet model performed better than its pre-trained counterparts is likely due to the fact that the CNN was trained specifically on the kind of images that are present in our dataset. This is also confirmed by the fact that, after the optimization process, the pre-trained models have deeper, more complex heads, whereas the ResNet model only needs a single layer with 1024 units. Moreover, the ResNet model achieved the best score during $k$-fold cross validation, indicating that it is likely capable of generalizing well.
 
 The deployment of the ResNet model on a robotic platform would also benefit from having a very small CPU inference time of around 4ms, compared to heavier models such as EfficientNet, which has an inference time of more than 500ms.\\
 
-\noindent
-In conclusion, the model selection phase yielded the expected results (i.e., finding good HPs in a limited time frame), and it was able to produce a CNN-based model that performs better than the linear one. Despite the lack of interpretability of the ResNet model, its low inference times allow for real-time usage on a robot, and the tail CNN weights can be used to perform transfer learning for future prediction tasks.\\
+\section{Conclusions}
+The model selection phase yielded the expected results (i.e., finding good HPs in a limited time frame), and was able to produce a CNN-based model that performs better than the linear one. Despite the lack of interpretability of the ResNet model, its low inference times allows for real-time usage on a robot, and its tail CNN weights can be used to perform transfer learning for future prediction tasks.\\
 
 \noindent
 Further improvements of this work may include:
